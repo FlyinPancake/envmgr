@@ -1,0 +1,2 @@
+[workspace]
+members = ["envmgr", "envmgr_plugin"]
