@@ -1,2 +1,3 @@
 [workspace]
 members = ["envmgr", "envmgr_plugin"]
+resolver = "2"
