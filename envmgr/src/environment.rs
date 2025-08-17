@@ -2,22 +2,16 @@ use anyhow::Result;
 use std::collections::HashMap;
 use std::fs;
 
-use crate::config::{EnvMgrConfig, EnvironmentConfig};
+use crate::config::{EnvMgrConfig, EnvironmentConfig, EMPTY_ENV};
 use crate::dotfiles::DotfileManager;
 use crate::plugins::PluginManager;
+use crate::shell::{detect_shell, emit_set};
 
 /// Environment manager for creating, switching, and managing environments
 pub struct EnvironmentManager {
     config: EnvMgrConfig,
     pub dotfile_manager: DotfileManager,
     pub plugin_manager: PluginManager,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum DetectedShell {
-    Bash,
-    Zsh,
-    Fish,
 }
 
 impl EnvironmentManager {
@@ -89,12 +83,15 @@ impl EnvironmentManager {
 
     /// Switch to an environment
     pub async fn use_environment(&mut self, name: &str) -> Result<()> {
-        if !self.config.env_exists(name) {
+        let env_config = if name == "base" {
+            EMPTY_ENV.clone()
+        } else if !self.config.env_exists(name) {
             anyhow::bail!("Environment '{}' does not exist", name);
-        }
+        } else {
+            EnvironmentConfig::load(&self.config.config_dir, name)?
+        };
 
         // Load environment config
-        let env_config = EnvironmentConfig::load(&self.config.config_dir, name)?;
 
         // Apply dotfiles
         self.dotfile_manager.apply_environment(&env_config).await?;
@@ -113,7 +110,7 @@ impl EnvironmentManager {
 
     /// Output environment variables for shell evaluation
     fn output_env_vars(&self, env_config: &EnvironmentConfig) -> Result<()> {
-        let sh = detect_shell();
+        let sh = detect_shell()?;
 
         // Output base environment variables first
         if let Some(base_name) = &env_config.base {
@@ -182,57 +179,5 @@ impl EnvironmentManager {
             None => println!("No environment is currently active"),
         }
         Ok(())
-    }
-}
-
-fn detect_shell() -> DetectedShell {
-    if std::env::var("ENVMGR_SHELL")
-        .map(|s| s.to_lowercase())
-        .map(|s| s.contains("fish"))
-        .unwrap_or(false)
-        || std::env::var("FISH_VERSION").is_ok()
-        || std::env::var("SHELL")
-            .map(|s| s.ends_with("fish"))
-            .unwrap_or(false)
-    {
-        return DetectedShell::Fish;
-    }
-    if std::env::var("SHELL")
-        .map(|s| s.ends_with("zsh"))
-        .unwrap_or(false)
-    {
-        return DetectedShell::Zsh;
-    }
-    DetectedShell::Bash
-}
-
-fn emit_set(sh: &DetectedShell, key: &str, value: &str) {
-    match sh {
-        DetectedShell::Fish => println!("set -gx {} {}", key, fish_escape(value)),
-        DetectedShell::Bash | DetectedShell::Zsh => {
-            println!("export {}={}", key, shell_escape(value))
-        }
-    }
-}
-
-/// Escape a string for shell usage
-fn shell_escape(s: &str) -> String {
-    if s.chars()
-        .all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.' || c == '/')
-    {
-        s.to_string()
-    } else {
-        format!("'{}'", s.replace('\'', "'\"'\"'"))
-    }
-}
-
-fn fish_escape(s: &str) -> String {
-    // Use single-quoted string, escape single quotes using the common POSIX trick
-    if s.chars()
-        .all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.' || c == '/')
-    {
-        s.to_string()
-    } else {
-        format!("'{}'", s.replace('\'', "'\"'\"'"))
     }
 }

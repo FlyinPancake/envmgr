@@ -6,6 +6,7 @@ mod config;
 mod dotfiles;
 mod environment;
 mod plugins;
+mod shell;
 
 use commands::*;
 use config::EnvMgrConfig;
@@ -34,6 +35,8 @@ enum Commands {
     /// Use/activate an environment
     Use {
         /// Name of the environment to activate
+        ///
+        /// Use `base` to remove the currently active environment
         name: String,
     },
     /// Install shell hooks to auto-apply current env on new shells

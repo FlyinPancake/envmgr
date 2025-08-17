@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -15,7 +16,7 @@ impl EnvMgrConfig {
     /// Load configuration from the default location
     pub fn load() -> Result<Self> {
         let config_dir = Self::default_config_dir()?;
-        
+
         // Ensure the config directory exists
         fs::create_dir_all(&config_dir)?;
         fs::create_dir_all(config_dir.join("base/dotfiles"))?;
@@ -59,7 +60,7 @@ impl EnvMgrConfig {
     /// Set the current environment
     pub fn set_current_env(&mut self, env_name: Option<&str>) -> Result<()> {
         let current_file = self.config_dir.join("current");
-        
+
         if let Some(name) = env_name {
             fs::write(current_file, name)?;
             self.current_env = Some(name.to_string());
@@ -69,7 +70,7 @@ impl EnvMgrConfig {
             }
             self.current_env = None;
         }
-        
+
         Ok(())
     }
 
@@ -96,23 +97,21 @@ impl EnvMgrConfig {
     /// List all available environments
     pub fn list_environments(&self) -> Result<Vec<String>> {
         let mut envs = Vec::new();
-        
+
         for entry in fs::read_dir(&self.config_dir)? {
             let entry = entry?;
             let path = entry.path();
-            
+
             if path.is_dir() {
-                let name = path.file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("");
-                
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
                 // Skip special directories
                 if !matches!(name, "base" | "plugins" | "current") {
                     envs.push(name.to_string());
                 }
             }
         }
-        
+
         envs.sort();
         Ok(envs)
     }
@@ -131,7 +130,7 @@ impl EnvironmentConfig {
     /// Load environment configuration from file
     pub fn load(config_dir: &Path, env_name: &str) -> Result<Self> {
         let config_file = config_dir.join(env_name).join("config.yaml");
-        
+
         if config_file.exists() {
             let content = fs::read_to_string(config_file)?;
             serde_yaml::from_str(&content).context("Failed to parse environment config")
@@ -150,11 +149,11 @@ impl EnvironmentConfig {
     pub fn save(&self, config_dir: &Path) -> Result<()> {
         let env_dir = config_dir.join(&self.name);
         fs::create_dir_all(&env_dir)?;
-        
+
         let config_file = env_dir.join("config.yaml");
         let content = serde_yaml::to_string(self)?;
         fs::write(config_file, content)?;
-        
+
         Ok(())
     }
 
@@ -167,4 +166,13 @@ impl EnvironmentConfig {
     pub fn plugins_dir(&self, config_dir: &Path) -> PathBuf {
         config_dir.join(&self.name).join("plugins")
     }
+}
+
+lazy_static! {
+    pub static ref EMPTY_ENV: EnvironmentConfig = EnvironmentConfig {
+        name: String::new(),
+        base: None,
+        env_vars: HashMap::new(),
+        plugins: HashMap::new(),
+    };
 }

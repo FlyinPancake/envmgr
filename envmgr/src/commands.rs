@@ -3,6 +3,7 @@ use std::process::Command;
 
 use crate::config::EnvMgrConfig;
 use crate::environment::EnvironmentManager;
+use crate::shell::detect_shell;
 
 /// List all environments
 pub async fn list_environments(config: &EnvMgrConfig) -> Result<()> {
@@ -63,7 +64,7 @@ pub async fn list_dotfiles(config: &EnvMgrConfig) -> Result<()> {
 
 /// Re-link all dotfiles
 pub async fn link_dotfiles(config: &EnvMgrConfig) -> Result<()> {
-    let manager = EnvironmentManager::new(config.clone());
+    let mut manager = EnvironmentManager::new(config.clone());
     manager.dotfile_manager.relink_dotfiles().await
 }
 
@@ -161,31 +162,36 @@ pub async fn install_shell_hooks(config: &EnvMgrConfig, shell: Option<&str>) -> 
         dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
 
     // Determine target shell
-    let detected_shell = shell.map(|s| s.to_string()).or_else(|| {
+    let detected_shell = shell.map(|s| s.to_string().to_lowercase()).or_else(|| {
         // Try to detect from environment
-        if std::env::var("FISH_VERSION").is_ok() {
-            Some("fish".to_string())
-        } else if let Ok(sh) = std::env::var("SHELL") {
-            if sh.ends_with("zsh") {
-                Some("zsh".to_string())
-            } else if sh.ends_with("fish") {
-                Some("fish".to_string())
-            } else {
-                Some("bash".to_string())
-            }
-        } else {
-            Some("bash".to_string())
-        }
+        Some(
+            detect_shell()
+                .map(|s| s.to_string())
+                .unwrap_or("".to_string()),
+        )
     });
 
-    let shell_lower = detected_shell.as_deref().map(|s| s.to_lowercase());
-
     // Determine rc file and snippet
-    let (shell_name, rc_file, snippet) = match shell_lower.as_deref() {
+    let (shell_name, rc_file, snippet) = match detected_shell.as_deref() {
         Some("fish") => {
-            let rc = home.join(".config/fish/config.fish");
+            let rc = home.join(".config/fish/conf.d/envmgr.fish");
             let snip = format!(
-                "\n# >>> envmgr (auto-generated) start >>>\nfunction envmgr\n  if test (count $argv) -ge 1 -a \"$argv[1]\" = \"use\"\n    command envmgr $argv | source -\n  else\n    command envmgr $argv\n  end\nend\nalias eu=\"envmgr use\"\nif test -f {cfg}/current\n  set -l cur (cat {cfg}/current)\n  if test -n \"$cur\"\n    command envmgr use $cur | source -\n  end\nend\n# <<< envmgr (auto-generated) end <<<\n",
+                r#"
+# >>> envmgr (auto-generated) start >>>
+function envmgr --wraps envmgr
+    if test (count $argv) -ge 1 -a "$argv[1]" = "use"
+        command envmgr $argv | source -
+    else
+        command envmgr $argv
+    end
+end
+if test -f {cfg}/current
+    set -l cur (cat {cfg}/current)
+    if test -n "$cur"
+        command envmgr use $cur | source -
+    end
+end
+# <<< envmgr (auto-generated) end <<<"#,
                 cfg = config.config_dir.display()
             );
             ("fish", rc, snip)
@@ -193,18 +199,44 @@ pub async fn install_shell_hooks(config: &EnvMgrConfig, shell: Option<&str>) -> 
         Some("zsh") => {
             let rc = home.join(".zshrc");
             let snip = format!(
-                "\n# >>> envmgr (auto-generated) start >>>\nfunction envmgr() {{\n  if [ \"$1\" = \"use\" ]; then\n    eval \"$(command envmgr \"$@\")\"\n  else\n    command envmgr \"$@\"\n  fi\n}}\nalias eu=\"envmgr use\"\nif [ -f {cfg}/current ]; then cur=\"$(cat {cfg}/current)\"; if [ -n \"$cur\" ]; then eval \"$(command envmgr use \"$cur\")\"; fi; fi\n# <<< envmgr (auto-generated) end <<<\n",
+                r#"
+# >>> envmgr (auto-generated) start >>>
+function envmgr() {{
+  if [ "$1" = "use" ]; then
+    eval "$(command envmgr "$@")"
+  else
+    command envmgr "$@"
+  fi
+}}
+if [ -f {cfg}/current ]; then cur="$(cat {cfg}/current)"; if [ -n "$cur" ]; then eval "$(command envmgr use "$cur")"; fi; fi
+# <<< envmgr (auto-generated) end <<<\n"#,
                 cfg = config.config_dir.display()
             );
             ("zsh", rc, snip)
         }
-        _ => {
+        Some("bash") => {
             let rc = home.join(".bashrc");
             let snip = format!(
-                "\n# >>> envmgr (auto-generated) start >>>\nfunction envmgr() {{\n  if [ \"$1\" = \"use\" ]; then\n    eval \"$(command envmgr \"$@\")\"\n  else\n    command envmgr \"$@\"\n  fi\n}}\nalias eu=\"envmgr use\"\nif [ -f {cfg}/current ]; then cur=\"$(cat {cfg}/current)\"; if [ -n \"$cur\" ]; then eval \"$(command envmgr use \"$cur\")\"; fi; fi\n# <<< envmgr (auto-generated) end <<<\n",
+                r#"
+# >>> envmgr (auto-generated) start >>>
+function envmgr() {{
+  if [ "$1" = "use" ]; then
+    eval "$(command envmgr "$@")"
+  else
+    command envmgr "$@"
+  fi
+}}
+if [ -f {cfg}/current ]; then cur="$(cat {cfg}/current)"; if [ -n "$cur" ]; then eval "$(command envmgr use "$cur")"; fi; fi
+# <<< envmgr (auto-generated) end <<<"#,
                 cfg = config.config_dir.display()
             );
             ("bash", rc, snip)
+        }
+        _ => {
+            anyhow::bail!(
+                "Unsupported shell: {}",
+                detected_shell.unwrap_or("unknown".to_string())
+            );
         }
     };
 
