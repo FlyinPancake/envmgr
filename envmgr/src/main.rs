@@ -1,159 +1,106 @@
-use anyhow::{Context, Result};
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::Parser;
+use indoc::indoc;
+use log::info;
+use std::path::Path;
 
-mod commands;
+use crate::environment::EnvironmentManager;
+use crate::error::EnvMgrResult;
+
+mod cli;
 mod config;
-mod dotfiles;
 mod environment;
-mod plugins;
-mod shell;
+mod error;
+mod integrations;
+mod state;
 
-use commands::*;
-use config::EnvMgrConfig;
+fn make_fish_hook(bin_name: &str) -> String {
+    // We output a direnv-like hook with two parts:
+    // 1) A function named like the binary that intercepts `use` and `switch` and pipes output to `source`.
+    // 2) Event-driven hooks that re-apply the environment on directory change or before command exec,
+    //    controlled by $envmgr_fish_mode ("disable_arrow" to disable, "eval_after_arrow" to defer until after the prompt arrow).
+    //
+    // Users should run: envmgr hook fish | source
+    // Or persist into ~/.config/fish/conf.d/envmgr.fish
+    indoc! {r#"
+    # envmgr fish hook
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-#[command(name = "envmgr")]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+    # Re-apply env on prompt draw
+    function __envmgr_export_eval --on-event fish_prompt
+        command BIN_NAME use | source
+    end"#}
+    .replace("BIN_NAME", bin_name)
 }
 
-#[derive(ValueEnum, Clone, Debug)]
-enum ShellKind {
-    Bash,
-    Zsh,
-    Fish,
-}
+fn main() -> EnvMgrResult<()> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp(None)
+        .format_module_path(false)
+        .format_source_path(false)
+        .format_target(false)
+        .init();
+    let cli = cli::Args::parse();
 
-#[derive(Subcommand)]
-enum Commands {
-    /// List all available environments
-    List,
-    /// Show current active environment
-    Current,
-    /// Use/activate an environment
-    Use {
-        /// Name of the environment to activate
-        ///
-        /// Use `base` to remove the currently active environment
-        name: String,
-    },
-    /// Install shell hooks to auto-apply current env on new shells
-    Install {
-        /// Target shell to install hooks for (defaults to $SHELL)
-        #[arg(long)]
-        shell: Option<ShellKind>,
-    },
-    /// Add a new environment
-    Add {
-        /// Name of the new environment
-        name: String,
-        /// Base environment to inherit from (optional)
-        #[arg(long)]
-        base: Option<String>,
-    },
-    /// Remove an environment
-    Remove {
-        /// Name of the environment to remove
-        name: String,
-    },
-    /// Edit environment configuration
-    Edit {
-        /// Name of the environment to edit
-        name: String,
-    },
-    /// Dotfiles management
-    #[command(subcommand)]
-    Dotfiles(DotfilesCommands),
-    /// Plugin management
-    #[command(subcommand)]
-    Plugin(PluginCommands),
-}
+    // Use only the executable basename as the fish function name (avoid paths like target/debug/envmgr)
+    let bin_name = std::env::args()
+        .next()
+        .and_then(|p| {
+            Path::new(&p)
+                .file_name()
+                .map(|s| s.to_string_lossy().into_owned())
+        })
+        .filter(|s: &String| !s.is_empty())
+        .unwrap_or_else(|| "envmgr".to_string());
 
-#[derive(Subcommand)]
-enum DotfilesCommands {
-    /// List managed dotfiles
-    List,
-    /// Re-link all dotfiles
-    Link,
-    /// Show differences between environments
-    Diff {
-        /// Environment name to compare
-        env: String,
-    },
-}
-
-#[derive(Subcommand)]
-enum PluginCommands {
-    /// List available plugins
-    List,
-    /// Enable a plugin
-    Enable {
-        /// Plugin name
-        name: String,
-    },
-    /// Disable a plugin
-    Disable {
-        /// Plugin name
-        name: String,
-    },
-    /// Configure a plugin for an environment
-    Config {
-        /// Plugin name
-        plugin: String,
-        /// Environment name
-        env: String,
-    },
-    /// Install a plugin
-    Install {
-        /// Plugin name
-        ///
-        /// This can be a single name for first-party plugins,
-        /// or a full identifier for third-party plugins (e.g., `user/repo`)
-        identifier: String,
-    },
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let cli = Cli::parse();
-    let config = EnvMgrConfig::load().context("Failed to load envmgr configuration")?;
-
-    match cli.command {
-        Commands::List => list_environments(&config).await,
-        Commands::Current => show_current(&config).await,
-        Commands::Use { name } => use_environment(&config, &name).await,
-        Commands::Install { shell } => {
-            let shell_str = shell.map(|s| {
-                match s {
-                    ShellKind::Bash => "bash",
-                    ShellKind::Zsh => "zsh",
-                    ShellKind::Fish => "fish",
-                }
-                .to_string()
-            });
-            install_shell_hooks(&config, shell_str.as_deref()).await
+    match &cli.command {
+        cli::Command::Init { force } => {
+            info!("Initializing environment manager. Force: {}", force);
+            todo!("Implement init functionality");
         }
-        Commands::Add { name, base } => add_environment(&config, &name, base.as_deref()).await,
-        Commands::Remove { name } => remove_environment(&config, &name).await,
-        Commands::Edit { name } => edit_environment(&config, &name).await,
-        Commands::Dotfiles(cmd) => match cmd {
-            DotfilesCommands::List => list_dotfiles(&config).await,
-            DotfilesCommands::Link => link_dotfiles(&config).await,
-            DotfilesCommands::Diff { env } => diff_dotfiles(&config, &env).await,
-        },
-        Commands::Plugin(cmd) => match cmd {
-            PluginCommands::List => list_plugins(&config).await,
-            PluginCommands::Enable { name } => enable_plugin(&config, &name).await,
-            PluginCommands::Disable { name } => disable_plugin(&config, &name).await,
-            PluginCommands::Config { plugin, env } => {
-                configure_plugin(&config, &plugin, &env).await
-            }
-            PluginCommands::Install { identifier: _ } => {
-                anyhow::bail!("Plugin installation is not yet implemented");
-                // install_plugin(&config, &identifier).await
+        cli::Command::Hook { shell } => match shell {
+            cli::Shell::Fish => {
+                // Emit fish shell hook that defines a function to eval envmgr output
+                // Users will run: envmgr hook fish | source
+                println!("{}", make_fish_hook(&bin_name));
+                Ok(())
             }
         },
+        cli::Command::Add { name } => {
+            info!("Adding a new environment. Name: {}", name);
+            todo!("Implement add functionality");
+        }
+        cli::Command::List => {
+            info!("Listing all environments.");
+            let environments = EnvironmentManager::list_environments()?;
+            for (current, env) in environments {
+                eprintln!(
+                    "{} {} - {}",
+                    if current { "*" } else { " " },
+                    env.key,
+                    env.name
+                );
+            }
+            Ok(())
+        }
+        cli::Command::Remove { name } => {
+            info!("Removing environment: {}", name);
+            todo!("Implement remove functionality");
+        }
+        cli::Command::Use => {
+            let em = EnvironmentManager {
+                shell: cli::Shell::Fish,
+            };
+            em.use_environment()
+        }
+        cli::Command::Link => EnvironmentManager::link_files(),
+        cli::Command::Switch { name } => {
+            if name == config::BASE_ENV_NAME {
+                return EnvironmentManager::switch_base_environment();
+            }
+            EnvironmentManager::switch_environment_by_key(name)
+        }
+        cli::Command::Doctor => {
+            info!("Running health check.");
+            todo!("Implement doctor functionality");
+        }
     }
 }

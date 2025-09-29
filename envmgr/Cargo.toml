@@ -1,16 +1,19 @@
 [package]
-name = "envmgr"
+edition = "2024"
+name    = "envmgr"
 version = "0.1.0"
-edition = "2021"
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
-anyhow = "1.0"
-dirs = "5.0"
-tokio = { version = "1.0", features = ["full"] }
-async-trait = "0.1"
-envmgr_plugin = { path = "../envmgr_plugin" }
-lazy_static = "1.5.0"
-whattheshell = "1.1.0"
+clap.workspace       = true
+config.workspace     = true
+dirs.workspace       = true
+schemars.workspace   = true
+serde.workspace      = true
+serde_json.workspace = true
+thiserror.workspace  = true
+toml.workspace       = true
+
+indoc.workspace = true
+
+env_logger.workspace = true
+log.workspace        = true

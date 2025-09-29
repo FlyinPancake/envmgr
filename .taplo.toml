@@ -1,0 +1,10 @@
+[formatting]
+align_arrays         = true
+align_comments       = true
+align_entries        = true
+align_tables         = true
+array_trailing_comma = true
+indentation          = 2
+line_width           = 80
+reorder_keys         = true
+trailing_newline     = true
