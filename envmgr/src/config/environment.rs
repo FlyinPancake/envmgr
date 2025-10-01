@@ -11,6 +11,8 @@ pub struct EnvironmentConfig {
     #[serde(default)]
     pub env_vars: Vec<EnvVarsConfig>,
     pub op_ssh: Option<crate::integrations::one_password_ssh_agent::OnePasswordSSHAgentConfig>,
+    pub gh_cli: Option<crate::integrations::gh_cli::GhCliConfig>,
+    pub tailscale: Option<crate::integrations::tailscale::TailscaleConfig>,
 }
 
 const ENVS_DIR_NAME: &str = "environments";

@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use indoc::indoc;
 use log::info;
 use std::path::Path;
@@ -101,6 +101,14 @@ fn main() -> EnvMgrResult<()> {
         cli::Command::Doctor => {
             info!("Running health check.");
             todo!("Implement doctor functionality");
+        }
+        cli::Command::Completions { shell } => {
+            let mut cmd = cli::Args::command();
+            clap_complete::generate(*shell, &mut cmd, &bin_name, &mut std::io::stdout());
+            eprintln!(
+                "Usage: {bin_name} completions fish > ~/.config/fish/completions/{bin_name}.fish"
+            );
+            Ok(())
         }
     }
 }

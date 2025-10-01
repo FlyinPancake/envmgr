@@ -19,6 +19,8 @@ pub struct Environment {
     pub env_vars: Vec<EnvVarsConfig>,
     pub one_password_ssh:
         Option<crate::integrations::one_password_ssh_agent::OnePasswordSSHAgentConfig>,
+    pub gh_cli: Option<crate::integrations::gh_cli::GhCliConfig>,
+    pub tailscale: Option<crate::integrations::tailscale::TailscaleConfig>,
 }
 
 impl Environment {
@@ -29,6 +31,8 @@ impl Environment {
             name: config.name.clone(),
             env_vars: config.env_vars.clone(),
             one_password_ssh: config.op_ssh.clone(),
+            gh_cli: config.gh_cli.clone(),
+            tailscale: config.tailscale.clone(),
         }
     }
 

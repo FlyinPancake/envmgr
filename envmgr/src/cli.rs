@@ -85,4 +85,10 @@ pub enum Command {
     },
     /// Health check command
     Doctor,
+    /// Generate shell completions
+    Completions {
+        /// Target shell to generate completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
 }

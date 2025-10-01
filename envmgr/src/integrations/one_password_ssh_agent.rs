@@ -1,4 +1,7 @@
-use crate::error::{EnvMgrError, EnvMgrResult};
+use crate::{
+    error::{EnvMgrError, EnvMgrResult},
+    integrations::OnSwitchToPluginResult,
+};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, Default)]
 pub struct OnePasswordSSHAgentConfig {
@@ -39,9 +42,11 @@ impl OnePasswordSSHAgent {
         }
         Ok(())
     }
-    pub fn on_switch_to(config: &OnePasswordSSHAgentConfig) -> EnvMgrResult<()> {
+    pub fn on_switch_to(
+        config: &OnePasswordSSHAgentConfig,
+    ) -> EnvMgrResult<OnSwitchToPluginResult> {
         if config.keys.is_empty() {
-            return Ok(());
+            return Ok(Default::default());
         }
 
         let content = toml::to_string_pretty(&OPAgentFile {
@@ -52,6 +57,6 @@ impl OnePasswordSSHAgent {
 
         std::fs::write(Self::op_ssh_agent_file_path()?, content)?;
 
-        Ok(())
+        Ok(Default::default())
     }
 }

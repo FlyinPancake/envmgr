@@ -10,6 +10,12 @@ pub enum EnvMgrError {
     TomlSerialization(#[from] toml::ser::Error),
     #[error("Could not determine directory: {0}")]
     DirError(String),
+    #[error("GhCli Config Error: {0}")]
+    GhCliConfig(String),
+    #[error("Saphyr Scan Yaml Error: {0}")]
+    SaphyrYaml(#[from] saphyr::ScanError),
+    #[error("Saphyr Emit Yaml Error: {0}")]
+    SaphyrEmitYaml(#[from] saphyr::EmitError),
     #[error("Other Error: {0}")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
 }

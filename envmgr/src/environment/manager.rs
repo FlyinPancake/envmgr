@@ -103,6 +103,14 @@ impl EnvironmentManager {
             OnePasswordSSHAgent::on_switch_to(op_ssh_config)?;
         }
 
+        if let Some(gh_cli_config) = environment.gh_cli.as_ref() {
+            crate::integrations::gh_cli::GhCli::on_switch_to(gh_cli_config)?;
+        }
+
+        if let Some(tailscale_config) = environment.tailscale.as_ref() {
+            crate::integrations::tailscale::Tailscale::on_switch_to(tailscale_config)?;
+        }
+
         state.store_state()?;
         Self::link_files()?;
         Ok(())

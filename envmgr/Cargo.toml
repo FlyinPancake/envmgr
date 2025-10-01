@@ -4,14 +4,16 @@ name    = "envmgr"
 version = "0.1.0"
 
 [dependencies]
-clap.workspace       = true
-config.workspace     = true
-dirs.workspace       = true
-schemars.workspace   = true
-serde.workspace      = true
-serde_json.workspace = true
-thiserror.workspace  = true
-toml.workspace       = true
+clap.workspace          = true
+clap_complete.workspace = true
+config.workspace        = true
+dirs.workspace          = true
+saphyr.workspace        = true
+schemars.workspace      = true
+serde.workspace         = true
+serde_json.workspace    = true
+thiserror.workspace     = true
+toml.workspace          = true
 
 indoc.workspace = true
 

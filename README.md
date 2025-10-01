@@ -11,7 +11,6 @@ A dotfiles manager on steroids.
 - Support for multiple environments (e.g., work, personal).
 - Easy setup and configuration.
 - Backup and restore your dotfiles.
- - Plugin system: extend behavior with statically linked plugins.
 
 ## Installation
 
@@ -61,7 +60,17 @@ Notes:
 - [x] Basic dotfile management
 - [x] Environment switching
 - [x] Fish shell support
+- [x] GitHub CLI integration
+- [x] 1Password SSH Agent integration
+- [x] Tailscale integration
+- [ ] Init command with interactive setup
+- [ ] Add/remove environments
+- [ ] Import / export existing dotfiles
+- [ ] Doctor command
 - [ ] Plugin system
+- [ ] Encrypted files (e.g., using age)
+- [ ] Git wrapper for managing encrypted files
+- [ ] More integrations (e.g., AWS, GCP, Azure)
 - [ ] More shells (zsh, bash)
-- [ ] More platforms (Windows / MacOs)
+- [ ] More platforms (Windows / macOS)
 - [ ] Performance tests and budgets
