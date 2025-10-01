@@ -9,8 +9,9 @@ edition      = "2024"
 keywords     = ["dotfiles", "environment", "manager", "cli", "configuration"]
 license      = "Apache-2.0"
 license-file = "LICENSE"
+readme       = "README.md"
 repository   = "https://github.com/flyinpancake/envmgr"
-version      = "0.1.0"
+version      = "0.1.1"
 
 
 [workspace.dependencies]
