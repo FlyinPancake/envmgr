@@ -7,12 +7,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     name: "publish"
-
-    # Reference your environment variables
-    environment: cargo
-
     steps:
       - uses: actions/checkout@master
         with:
