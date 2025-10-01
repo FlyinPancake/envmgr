@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation & Usage Guide
+    url: https://github.com/flyinpancake/envmgr#readme
+    about: Review the README for installation, configuration, and example workflows.
+  - name: ✅ Contribution Guidelines
+    url: https://github.com/flyinpancake/envmgr/blob/main/CONTRIBUTING.md
+    about: Review expectations before opening a pull request or large change proposal.
