@@ -3,6 +3,14 @@ edition = "2024"
 name    = "envmgr"
 version = "0.1.0"
 
+[lib]
+name = "envmgr"
+path = "src/lib.rs"
+
+[[bin]]
+name = "envmgr"
+path = "src/main.rs"
+
 [dependencies]
 clap.workspace          = true
 clap_complete.workspace = true

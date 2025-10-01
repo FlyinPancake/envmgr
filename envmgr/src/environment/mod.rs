@@ -1,12 +1,12 @@
 mod manager;
 
-use log::{debug, info, warn};
-pub use manager::EnvironmentManager;
-
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+
+use log::{debug, info, warn};
+pub use manager::EnvironmentManager;
 
 use crate::{
     config::{BASE_ENV_NAME, EnvVarsConfig, EnvironmentConfig},
@@ -111,4 +111,61 @@ fn discover_files_in_dir(dir: &Path) -> EnvMgrResult<Vec<PathBuf>> {
         }
     }
     Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn test_discover_files_in_dir_empty() {
+        let temp_dir = std::env::temp_dir().join("envmgr_test_empty");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let files = discover_files_in_dir(&temp_dir).unwrap();
+        assert_eq!(files.len(), 0);
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_discover_files_in_dir_single_file() {
+        let temp_dir = std::env::temp_dir().join("envmgr_test_single");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+        fs::write(temp_dir.join("file1.txt"), "content").unwrap();
+
+        let files = discover_files_in_dir(&temp_dir).unwrap();
+        assert_eq!(files.len(), 1);
+        assert!(files[0].ends_with("file1.txt"));
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_discover_files_in_dir_nested() {
+        let temp_dir = std::env::temp_dir().join("envmgr_test_nested");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+        fs::create_dir_all(temp_dir.join("subdir")).unwrap();
+        fs::write(temp_dir.join("file1.txt"), "content1").unwrap();
+        fs::write(temp_dir.join("subdir").join("file2.txt"), "content2").unwrap();
+
+        let files = discover_files_in_dir(&temp_dir).unwrap();
+        assert_eq!(files.len(), 2);
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_discover_files_in_dir_nonexistent() {
+        let temp_dir = std::env::temp_dir().join("envmgr_test_nonexistent_dir");
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        let files = discover_files_in_dir(&temp_dir).unwrap();
+        assert_eq!(files.len(), 0);
+    }
 }

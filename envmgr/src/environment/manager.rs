@@ -10,8 +10,8 @@ use crate::{
     integrations::one_password_ssh_agent::OnePasswordSSHAgent,
     state::State,
 };
+
 pub struct EnvironmentManager {
-    /// Shell environment variables to set
     pub shell: Shell,
 }
 

@@ -1,9 +1,9 @@
+use std::path::Path;
+
 use config::Config;
 
-use crate::error::EnvMgrResult;
-
 use super::envmgr_config_dir;
-use std::path::Path;
+use crate::error::EnvMgrResult;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct EnvironmentConfig {

@@ -1,26 +1,14 @@
-use clap::{CommandFactory, Parser};
-use indoc::indoc;
-use log::info;
 use std::path::Path;
 
-use crate::environment::EnvironmentManager;
-use crate::error::EnvMgrResult;
-
-mod cli;
-mod config;
-mod environment;
-mod error;
-mod integrations;
-mod state;
+use clap::{CommandFactory, Parser};
+use envmgr::cli::{Args, Command, Shell};
+use envmgr::config::BASE_ENV_NAME;
+use envmgr::environment::EnvironmentManager;
+use envmgr::error::EnvMgrResult;
+use indoc::indoc;
+use log::info;
 
 fn make_fish_hook(bin_name: &str) -> String {
-    // We output a direnv-like hook with two parts:
-    // 1) A function named like the binary that intercepts `use` and `switch` and pipes output to `source`.
-    // 2) Event-driven hooks that re-apply the environment on directory change or before command exec,
-    //    controlled by $envmgr_fish_mode ("disable_arrow" to disable, "eval_after_arrow" to defer until after the prompt arrow).
-    //
-    // Users should run: envmgr hook fish | source
-    // Or persist into ~/.config/fish/conf.d/envmgr.fish
     indoc! {r#"
     # envmgr fish hook
 
@@ -38,9 +26,8 @@ fn main() -> EnvMgrResult<()> {
         .format_source_path(false)
         .format_target(false)
         .init();
-    let cli = cli::Args::parse();
+    let cli = Args::parse();
 
-    // Use only the executable basename as the fish function name (avoid paths like target/debug/envmgr)
     let bin_name = std::env::args()
         .next()
         .and_then(|p| {
@@ -52,23 +39,21 @@ fn main() -> EnvMgrResult<()> {
         .unwrap_or_else(|| "envmgr".to_string());
 
     match &cli.command {
-        cli::Command::Init { force } => {
+        Command::Init { force } => {
             info!("Initializing environment manager. Force: {}", force);
             todo!("Implement init functionality");
         }
-        cli::Command::Hook { shell } => match shell {
-            cli::Shell::Fish => {
-                // Emit fish shell hook that defines a function to eval envmgr output
-                // Users will run: envmgr hook fish | source
+        Command::Hook { shell } => match shell {
+            Shell::Fish => {
                 println!("{}", make_fish_hook(&bin_name));
                 Ok(())
             }
         },
-        cli::Command::Add { name } => {
+        Command::Add { name } => {
             info!("Adding a new environment. Name: {}", name);
             todo!("Implement add functionality");
         }
-        cli::Command::List => {
+        Command::List => {
             info!("Listing all environments.");
             let environments = EnvironmentManager::list_environments()?;
             for (current, env) in environments {
@@ -81,29 +66,27 @@ fn main() -> EnvMgrResult<()> {
             }
             Ok(())
         }
-        cli::Command::Remove { name } => {
+        Command::Remove { name } => {
             info!("Removing environment: {}", name);
             todo!("Implement remove functionality");
         }
-        cli::Command::Use => {
-            let em = EnvironmentManager {
-                shell: cli::Shell::Fish,
-            };
+        Command::Use => {
+            let em = EnvironmentManager { shell: Shell::Fish };
             em.use_environment()
         }
-        cli::Command::Link => EnvironmentManager::link_files(),
-        cli::Command::Switch { name } => {
-            if name == config::BASE_ENV_NAME {
+        Command::Link => EnvironmentManager::link_files(),
+        Command::Switch { name } => {
+            if name == BASE_ENV_NAME {
                 return EnvironmentManager::switch_base_environment();
             }
             EnvironmentManager::switch_environment_by_key(name)
         }
-        cli::Command::Doctor => {
+        Command::Doctor => {
             info!("Running health check.");
             todo!("Implement doctor functionality");
         }
-        cli::Command::Completions { shell } => {
-            let mut cmd = cli::Args::command();
+        Command::Completions { shell } => {
+            let mut cmd = Args::command();
             clap_complete::generate(*shell, &mut cmd, &bin_name, &mut std::io::stdout());
             eprintln!(
                 "Usage: {bin_name} completions fish > ~/.config/fish/completions/{bin_name}.fish"

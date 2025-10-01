@@ -55,3 +55,55 @@ impl State {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_state_default() {
+        let state = State::default();
+        assert_eq!(state.current_env_key, crate::config::BASE_ENV_NAME);
+        assert_eq!(state.applied_env_vars.len(), 0);
+        assert_eq!(state.managed_files.len(), 0);
+    }
+
+    #[test]
+    fn test_state_serialization_roundtrip() {
+        let mut state = State {
+            current_env_key: "test_env".to_string(),
+            ..State::default()
+        };
+        state
+            .applied_env_vars
+            .insert("KEY1".to_string(), "value1".to_string());
+        state
+            .applied_env_vars
+            .insert("KEY2".to_string(), "value2".to_string());
+        state
+            .managed_files
+            .push(PathBuf::from("/home/user/.config"));
+
+        let serialized = toml::to_string(&state).unwrap();
+        let deserialized: State = toml::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.current_env_key, "test_env");
+        assert_eq!(deserialized.applied_env_vars.len(), 2);
+        assert_eq!(
+            deserialized.applied_env_vars.get("KEY1"),
+            Some(&"value1".to_string())
+        );
+        assert_eq!(deserialized.managed_files.len(), 1);
+    }
+
+    #[test]
+    fn test_state_empty_serialization() {
+        let state = State::default();
+        let serialized = toml::to_string(&state).unwrap();
+        let deserialized: State = toml::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.current_env_key, crate::config::BASE_ENV_NAME);
+        assert!(deserialized.applied_env_vars.is_empty());
+        assert!(deserialized.managed_files.is_empty());
+    }
+}

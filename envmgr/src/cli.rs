@@ -6,6 +6,7 @@ pub enum Shell {
     Fish,
 }
 
+/// Quote a string for safe use in fish shell commands.
 fn fish_quote(value: &str) -> String {
     // Basic single-quote escaping for fish: ' -> '\''
     // Also sanitize newlines and carriage returns (replace with spaces)
@@ -13,7 +14,7 @@ fn fish_quote(value: &str) -> String {
         "''".to_string()
     } else {
         let sanitized = value.replace(['\n', '\r'], " ");
-        let escaped = sanitized.replace('\'', "'\\''");
+        let escaped = sanitized.replace('\'', "\\'");
         format!("'{}'", escaped)
     }
 }
@@ -24,7 +25,7 @@ impl Shell {
         match self {
             Shell::Fish => {
                 // Fish: export (-x) and make global (-g)
-                format!("set -gx {} '{}'", key, fish_quote(value))
+                format!("set -gx {} {}", key, fish_quote(value))
             }
         }
     }
@@ -36,6 +37,74 @@ impl Shell {
                 format!("set -e -g {}", key)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fish_quote_empty() {
+        assert_eq!(fish_quote(""), "''");
+    }
+
+    #[test]
+    fn test_fish_quote_simple() {
+        assert_eq!(fish_quote("hello"), "'hello'");
+    }
+
+    #[test]
+    fn test_fish_quote_with_single_quotes() {
+        assert_eq!(fish_quote("it's"), r#"'it\'s'"#);
+    }
+
+    #[test]
+    fn test_fish_quote_with_newline() {
+        assert_eq!(fish_quote("line1\nline2"), "'line1 line2'");
+    }
+
+    #[test]
+    fn test_fish_quote_with_carriage_return() {
+        assert_eq!(fish_quote("line1\rline2"), "'line1 line2'");
+    }
+
+    #[test]
+    fn test_fish_quote_mixed_special_chars() {
+        assert_eq!(fish_quote("hello\n'world'\r"), r#"'hello \'world\' '"#);
+    }
+
+    #[test]
+    fn test_set_env_var_cmd_simple() {
+        let shell = Shell::Fish;
+        assert_eq!(
+            shell.set_env_var_cmd("MY_VAR", "value"),
+            "set -gx MY_VAR 'value'"
+        );
+    }
+
+    #[test]
+    fn test_set_env_var_cmd_with_special_chars() {
+        let shell = Shell::Fish;
+        assert_eq!(
+            shell.set_env_var_cmd("PATH", "/usr/bin:/bin"),
+            "set -gx PATH '/usr/bin:/bin'"
+        );
+    }
+
+    #[test]
+    fn test_set_env_var_cmd_with_quotes() {
+        let shell = Shell::Fish;
+        assert_eq!(
+            shell.set_env_var_cmd("MSG", "it's working"),
+            r#"set -gx MSG 'it\'s working'"#
+        );
+    }
+
+    #[test]
+    fn test_unset_env_var_cmd() {
+        let shell = Shell::Fish;
+        assert_eq!(shell.unset_env_var_cmd("MY_VAR"), "set -e -g MY_VAR");
     }
 }
 
