@@ -76,3 +76,7 @@ Notes:
 - [ ] More integrations (e.g., AWS, GCP, Azure)
 - [ ] Plugin system
 - [ ] Performance tests and budgets
+
+## Security
+
+envmgr is still experimental software. If you believe you've found a security issue, please follow the guidance in our [security policy](./SECURITY.md). We'll review reports on a best-effort basis until a stable v1 release is available.
