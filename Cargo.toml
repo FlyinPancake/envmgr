@@ -1,6 +1,6 @@
 [workspace]
 members  = ["envmgr"]
-resolver = "3"
+resolver = "2"
 
 [workspace.package]
 authors      = ["flyinpancake <flyinpancake@pm.me>"]
