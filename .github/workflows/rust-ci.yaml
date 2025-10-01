@@ -1,0 +1,38 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+name: Rust CI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        command: [build, test, clippy, fmt]
+        include:
+          - command: build
+            name: Build
+            cmdline: cargo build
+          - command: test
+            name: Test
+            cmdline: cargo test
+          - command: clippy
+            name: Clippy
+            cmdline: cargo clippy
+          - command: fmt
+            name: Format
+            cmdline: cargo fmt --all -- --check
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Run ${{ matrix.name }}
+        run: ${{ matrix.cmdline }}
