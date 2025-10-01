@@ -25,6 +25,7 @@ jobs:
           - command: clippy
             name: Clippy
             cmdline: cargo clippy
+            components: clippy
           - command: fmt
             name: Format
             cmdline: cargo fmt --all -- --check
