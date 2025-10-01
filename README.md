@@ -63,14 +63,16 @@ Notes:
 - [x] GitHub CLI integration
 - [x] 1Password SSH Agent integration
 - [x] Tailscale integration
+- [ ] Test examples/simple_config with CI
+- [ ] More shells (zsh, bash)
 - [ ] Init command with interactive setup
+- [ ] Integrations interacting with state
 - [ ] Add/remove environments
 - [ ] Import / export existing dotfiles
+- [ ] More platforms (Windows / macOS)
 - [ ] Doctor command
-- [ ] Plugin system
 - [ ] Encrypted files (e.g., using age)
 - [ ] Git wrapper for managing encrypted files
 - [ ] More integrations (e.g., AWS, GCP, Azure)
-- [ ] More shells (zsh, bash)
-- [ ] More platforms (Windows / macOS)
+- [ ] Plugin system
 - [ ] Performance tests and budgets

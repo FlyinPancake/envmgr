@@ -1,0 +1,3 @@
+# Example app config that will be linked to ~/.config/myapp/config.toml
+settingA = true
+settingB = "value"

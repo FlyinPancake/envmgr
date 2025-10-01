@@ -1,0 +1,20 @@
+# Base environment config (applies to all envs)
+name: Base Environment
+# Key-value environment variables exported in your shell
+env_vars:
+  - key: EDITOR
+    value: nvim
+  - key: PAGER
+    value: less
+# Optional integrations. Uncomment and customize as needed.
+# op_ssh:
+#   keys:
+#     - vault: Personal
+#       item: "Yubikey SSH Key"
+#       account: you@1password.com
+# gh_cli:
+#   hosts:
+#     - host: github.com
+#       user: your-username
+# tailscale:
+#   tailnet: your-tailnet.example.com

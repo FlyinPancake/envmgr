@@ -1,0 +1,22 @@
+# Personal environment config (overlays base)
+name: Personal
+env_vars:
+  - key: PERSONAL_PROFILE
+    value: enabled
+  - key: AWS_PROFILE
+    value: personal
+# Example 1Password SSH Agent keys for this env (optional)
+# See more examples in the docs: https://developer.1password.com/docs/ssh/agent/config/
+# Note, 1Password SSH Agent is configured through toml files, and thus the examples are in toml format.
+# This is just a YAML representation of the same config for consistency with other config files.
+op_ssh:
+  keys:
+    - vault: "Work"
+      item: "Git Signing Key"
+      account: "ACME, Inc."
+    - vault: "Private"
+      account: "Wendy Appleseed's Family"
+    - vault: "Private"
+      account: "ACME, Inc."
+    - account: "Wendy Appleseed's Family"
+    - item: "hhaeohhhc7iksdbadbx5pxyb6m"

@@ -1,0 +1,15 @@
+# Work environment config (overlays base)
+name: Work
+env_vars:
+  - key: WORK_PROFILE
+    value: enabled
+  - key: AWS_PROFILE
+    value: work
+# Example GitHub CLI default user for a host
+gh_cli:
+  hosts:
+    - host: github.com
+      user: your-work-username
+# Example Tailscale tailnet to switch to on activation
+# tailscale:
+#   tailnet: work-tailnet.example.com
