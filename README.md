@@ -3,7 +3,7 @@
 A dotfiles manager on steroids.
 
 ## Limitations
-- Currently supports only Unix-like systems (Linux, macOS).
+- Currently supports only Linux.
 - Only fish shell is supported at the moment.
 
 ## Features
