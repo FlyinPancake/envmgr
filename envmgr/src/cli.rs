@@ -12,7 +12,7 @@ fn fish_quote(value: &str) -> String {
     if value.is_empty() {
         "''".to_string()
     } else {
-        let sanitized = value.replace('\n', " ").replace('\r', " ");
+        let sanitized = value.replace(['\n', '\r'], " ");
         let escaped = sanitized.replace('\'', "'\\''");
         format!("'{}'", escaped)
     }

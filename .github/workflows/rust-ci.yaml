@@ -24,7 +24,7 @@ jobs:
             cmdline: cargo test
           - command: clippy
             name: Clippy
-            cmdline: cargo clippy
+            cmdline: cargo clippy -- -D warnings
             components: clippy
           - command: fmt
             name: Format

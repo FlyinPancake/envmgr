@@ -27,11 +27,11 @@ impl EnvironmentManager {
         let mut environments = vec![(state.current_env_key == base.key, base)];
         for entry in std::fs::read_dir(envs_dir)? {
             let entry = entry?;
-            if entry.file_type()?.is_dir() {
-                if let Some(env_key) = entry.file_name().to_str() {
-                    let env = Environment::load_environment_by_key(env_key)?;
-                    environments.push((state.current_env_key == env.key, env));
-                }
+            if entry.file_type()?.is_dir()
+                && let Some(env_key) = entry.file_name().to_str()
+            {
+                let env = Environment::load_environment_by_key(env_key)?;
+                environments.push((state.current_env_key == env.key, env));
             }
         }
         Ok(environments)
@@ -193,11 +193,11 @@ impl EnvironmentManager {
                     target_path.display()
                 );
                 need_link = false;
-            } else if let Some(parent) = target_path.parent() {
-                if !parent.exists() {
-                    info!("Creating parent directory: {}", parent.display());
-                    std::fs::create_dir_all(parent)?;
-                }
+            } else if let Some(parent) = target_path.parent()
+                && !parent.exists()
+            {
+                info!("Creating parent directory: {}", parent.display());
+                std::fs::create_dir_all(parent)?;
             }
 
             if need_link {

@@ -62,13 +62,17 @@ impl GhCli {
                     "User '{user}' not found under host '{host}'"
                 )))?;
 
-            gh_cli_hosts
+            if let Some(u) = gh_cli_hosts
                 .as_mapping_get_mut(host)
                 .and_then(|h| h.as_mapping_get_mut("user"))
-                .map(|u| *u = Yaml::Value(saphyr::Scalar::String(user.clone().into())));
+            {
+                *u = Yaml::Value(saphyr::Scalar::String(user.clone().into()));
+            }
         }
         let mut content = String::new();
-        YamlEmitter::new(&mut content).dump(&gh_cli_hosts)?;
+        YamlEmitter::new(&mut content).dump(gh_cli_hosts)?;
+
+        content.push('\n'); // Ensure file ends with a newline
 
         std::fs::write(Self::gh_cli_hosts_file_path()?, content)?;
 
