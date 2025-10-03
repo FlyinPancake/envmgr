@@ -39,14 +39,16 @@ jobs:
 
           tag = "${{ steps.git_tag.outputs.latest }}"[1:] # remove leading 'v'
           cargo_version = "${{ steps.cargo_version.outputs.result }}"
-          if tag == cargo_version:
-              print("Cargo version and latest tag are the same, no release needed", file=os.environ["GITHUB_STEP_SUMMARY"])
-              print("release_needed=false", file=os.environ["GITHUB_OUTPUT"])
-          elif tag > cargo_version:
-              print("Latest tag is greater than Cargo version, please update Cargo.toml", file=os.environ["GITHUB_STEP_SUMMARY"])
-              exit(1)
-          else:
-              print("release_needed=true", file=os.environ["GITHUB_OUTPUT"])
+          with open(os.environ["GITHUB_OUTPUT"]) as gh_output:
+            with open(os.environ["GITHUB_STEP_SUMMARY"]) as gh_step_summary
+              if tag == cargo_version:
+                  print("Cargo version and latest tag are the same, no release needed", file=gh_step_summary)
+                  print("release_needed=false", file=gh_output)
+              elif tag > cargo_version:
+                  print("Latest tag is greater than Cargo version, please update Cargo.toml", file=gh_step_summary)
+                  exit(1)
+              else:
+                  print("release_needed=true", file=gh_output)
           EOPY
 
   build_release:
