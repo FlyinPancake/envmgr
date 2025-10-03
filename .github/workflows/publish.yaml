@@ -38,7 +38,7 @@ jobs:
 
       - name: Check needs release
         id: check_release
-        run: uv run ./.github/scripts/check_release.py ${{ steps.git_tag.outputs.latest }} ${{ steps.cargo_version.outputs.result }}
+        run: uv run ./.github/workflows/scripts/compare_versions.py ${{ steps.git_tag.outputs.latest }} ${{ steps.cargo_version.outputs.result }}
 
   build_release:
     needs: gather_info
