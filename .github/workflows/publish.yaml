@@ -5,19 +5,113 @@ on:
     branches: [main]
 
 jobs:
-  publish:
+  gather_info:
     runs-on: ubuntu-latest
-    name: "publish"
+    name: "gather_info"
+    outputs:
+      release_needed: ${{ steps.check_release.outputs.release_needed }}
+      cargo_version: ${{ steps.cargo_version.outputs.result }}
+
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           # get git tags info
           fetch-depth: 0
 
-      - name: Run publish-action
-        uses: tu6ge/publish-action@v0.4.9
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Find latest tag
+        id: git_tag
+        run: echo "latest=$(git describe --tags $(git rev-list --tags --max-count=1))" >> $GITHUB_ENV
+
+      - name: Check version in Cargo.toml
+        uses: mikefarah/yq@master
+        id: cargo_version
+        with:
+          cmd: yq '.workspace.package.version' Cargo.toml
+
+      - name: Check needs release
+        id: check_release
+        run: |
+          python << EOPY
+          import os
+
+          tag = "${{ steps.git_tag.outputs.latest }}"[1:] # remove leading 'v'
+          cargo_version = "${{ steps.cargo_version.outputs.result }}"
+          if tag == cargo_version:
+              print("Cargo version and latest tag are the same, no release needed", file=os.environ["GITHUB_STEP_SUMMARY"])
+              print("release_needed=false", file=os.environ["GITHUB_OUTPUT"])
+          elif tag > cargo_version:
+              print("Latest tag is greater than Cargo version, please update Cargo.toml", file=os.environ["GITHUB_STEP_SUMMARY"])
+              exit(1)
+          else:
+              print("release_needed=true", file=os.environ["GITHUB_OUTPUT"])
+          EOPY
+
+  build_release:
+    needs: gather_info
+    if: needs.gather_info.outputs.release_needed == 'true'
+    runs-on: ${{ matrix.os }}
+    name: Build Release for ${{ matrix.name }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            name: x86_64 Linux
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            name: aarch64 Linux
+    steps:
+      - uses: actions/checkout@v5
+        name: Checkout code
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Install musl build tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binary-${{ matrix.target }}
+          path: target/release/envmgr
+
+  publish:
+    needs:
+      - build_release
+      - gather_info
+    runs-on: ubuntu-latest
+    name: "publish"
+    steps:
+      - uses: actions/checkout@v5
+        name: Checkout code
+
+      - name: Create Release Tag
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git tag v${{ needs.gather_info.outputs.cargo_version }}
+          git push origin v${{ needs.gather_info.outputs.cargo_version }}
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Publish to Cargo
         env:
-          # This can help you tagging the github repository
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # This can help you publish to crates.io
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --workspace
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: release-binary-*
+          path: ./artifacts
