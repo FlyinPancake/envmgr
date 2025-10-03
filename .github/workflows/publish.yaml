@@ -40,7 +40,7 @@ jobs:
           tag = "${{ steps.git_tag.outputs.latest }}"[1:] # remove leading 'v'
           cargo_version = "${{ steps.cargo_version.outputs.result }}"
           with open(os.environ["GITHUB_OUTPUT"]) as gh_output:
-            with open(os.environ["GITHUB_STEP_SUMMARY"]) as gh_step_summary
+            with open(os.environ["GITHUB_STEP_SUMMARY"]) as gh_step_summary:
               if tag == cargo_version:
                   print("Cargo version and latest tag are the same, no release needed", file=gh_step_summary)
                   print("release_needed=false", file=gh_output)
