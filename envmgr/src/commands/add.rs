@@ -1,6 +1,6 @@
 use std::fs;
 
-use dialoguer::{theme::ColorfulTheme, Confirm, Input};
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use log::info;
 
 use crate::config::EnvironmentConfig;
@@ -16,7 +16,7 @@ fn slugify(s: &str) -> String {
         .to_lowercase()
         .chars()
         .map(|c| {
-            if c.is_alphanumeric() {
+            if c.is_ascii_alphanumeric() {
                 c
             } else if c.is_whitespace() || c == '-' || c == '_' {
                 '-'
@@ -44,7 +44,9 @@ fn validate_key(key: &str) -> Result<(), String> {
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
     {
-        return Err("Key must contain only alphanumeric characters, hyphens, or underscores".to_string());
+        return Err(
+            "Key must contain only alphanumeric characters, hyphens, or underscores".to_string(),
+        );
     }
 
     if key == "base" {
@@ -119,7 +121,11 @@ fn prompt_op_ssh_config() -> EnvMgrResult<Option<OnePasswordSSHAgentConfig>> {
             keys.push(OnePasswordSSHKey {
                 vault: if vault.is_empty() { None } else { Some(vault) },
                 item: if item.is_empty() { None } else { Some(item) },
-                account: if account.is_empty() { None } else { Some(account) },
+                account: if account.is_empty() {
+                    None
+                } else {
+                    Some(account)
+                },
             });
 
             let add_more = Confirm::with_theme(&ColorfulTheme::default())
@@ -174,9 +180,7 @@ pub fn add_environment(name_arg: &str) -> EnvMgrResult<()> {
     let env_key: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Environment key (filesystem-safe identifier)")
         .default(suggested_key)
-        .validate_with(|input: &String| -> Result<(), String> {
-            validate_key(input)
-        })
+        .validate_with(|input: &String| -> Result<(), String> { validate_key(input) })
         .interact_text()?;
 
     // Check if environment already exists
@@ -302,7 +306,10 @@ mod tests {
     fn test_slugify_real_world_examples() {
         assert_eq!(slugify("My Work Environment"), "my-work-environment");
         assert_eq!(slugify("Personal (Home)"), "personal-home");
-        assert_eq!(slugify("Client ABC - Project XYZ"), "client-abc-project-xyz");
+        assert_eq!(
+            slugify("Client ABC - Project XYZ"),
+            "client-abc-project-xyz"
+        );
         assert_eq!(slugify("Dev & Test"), "dev-test");
     }
 
@@ -378,10 +385,10 @@ mod tests {
         assert!(validate_key("1").is_ok());
         assert!(validate_key("-").is_ok());
         assert!(validate_key("_").is_ok());
-        
+
         // Long keys
         assert!(validate_key("very-long-environment-name-with-many-words").is_ok());
-        
+
         // Mixed case (should be allowed)
         assert!(validate_key("MyWork").is_ok());
         assert!(validate_key("WORK").is_ok());
@@ -402,7 +409,7 @@ mod tests {
                 },
             ],
         };
-        
+
         assert_eq!(config.hosts.len(), 2);
         assert_eq!(config.hosts[0].host, "github.com");
         assert_eq!(config.hosts[1].user, "workuser");
@@ -415,7 +422,7 @@ mod tests {
             item: Some("SSH Key".to_string()),
             account: Some("user@example.com".to_string()),
         };
-        
+
         assert!(key.vault.is_some());
         assert_eq!(key.vault.unwrap(), "Personal");
     }
@@ -427,7 +434,7 @@ mod tests {
             item: Some("Key".to_string()),
             account: None,
         };
-        
+
         assert!(key_minimal.vault.is_none());
         assert!(key_minimal.item.is_some());
         assert!(key_minimal.account.is_none());
@@ -449,7 +456,7 @@ mod tests {
                 },
             ],
         };
-        
+
         assert_eq!(config.keys.len(), 2);
     }
 
@@ -458,7 +465,7 @@ mod tests {
         let config = TailscaleConfig {
             tailnet: "company.example.com".to_string(),
         };
-        
+
         assert_eq!(config.tailnet, "company.example.com");
     }
 
@@ -471,7 +478,7 @@ mod tests {
             gh_cli: None,
             tailscale: None,
         };
-        
+
         assert_eq!(config.name, "Test Environment");
         assert_eq!(config.env_vars.len(), 0);
         assert!(config.op_ssh.is_none());
@@ -495,7 +502,7 @@ mod tests {
                 tailnet: "example.com".to_string(),
             }),
         };
-        
+
         assert!(config.op_ssh.is_some());
         assert!(config.gh_cli.is_some());
         assert!(config.tailscale.is_some());
@@ -515,7 +522,7 @@ mod tests {
             }),
             tailscale: None,
         };
-        
+
         let yaml = serde_norway::to_string(&config).expect("Failed to serialize");
         assert!(yaml.contains("name:"));
         assert!(yaml.contains("Serialization Test"));

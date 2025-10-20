@@ -209,19 +209,19 @@ fn test_environment_config_with_gh_cli_integration() {
 #[test]
 fn test_environment_config_with_one_password_ssh_integration() {
     use envmgr::config::EnvironmentConfig;
-    use envmgr::integrations::one_password_ssh_agent::{OnePasswordSSHAgentConfig, OnePasswordSSHKey};
+    use envmgr::integrations::one_password_ssh_agent::{
+        OnePasswordSSHAgentConfig, OnePasswordSSHKey,
+    };
 
     let config = EnvironmentConfig {
         name: "1Password Test".to_string(),
         env_vars: vec![],
         op_ssh: Some(OnePasswordSSHAgentConfig {
-            keys: vec![
-                OnePasswordSSHKey {
-                    vault: Some("Work".to_string()),
-                    item: Some("SSH Key".to_string()),
-                    account: Some("user@example.com".to_string()),
-                },
-            ],
+            keys: vec![OnePasswordSSHKey {
+                vault: Some("Work".to_string()),
+                item: Some("SSH Key".to_string()),
+                account: Some("user@example.com".to_string()),
+            }],
         }),
         gh_cli: None,
         tailscale: None,
@@ -234,7 +234,10 @@ fn test_environment_config_with_one_password_ssh_integration() {
 
     let deserialized: EnvironmentConfig = serde_norway::from_str(&yaml).unwrap();
     assert!(deserialized.op_ssh.is_some());
-    assert_eq!(deserialized.op_ssh.unwrap().keys[0].vault, Some("Work".to_string()));
+    assert_eq!(
+        deserialized.op_ssh.unwrap().keys[0].vault,
+        Some("Work".to_string())
+    );
 }
 
 #[test]
@@ -258,14 +261,19 @@ fn test_environment_config_with_tailscale_integration() {
 
     let deserialized: EnvironmentConfig = serde_norway::from_str(&yaml).unwrap();
     assert!(deserialized.tailscale.is_some());
-    assert_eq!(deserialized.tailscale.unwrap().tailnet, "company.example.com");
+    assert_eq!(
+        deserialized.tailscale.unwrap().tailnet,
+        "company.example.com"
+    );
 }
 
 #[test]
 fn test_environment_config_with_all_integrations_serialization() {
     use envmgr::config::EnvironmentConfig;
     use envmgr::integrations::gh_cli::{GhCliConfig, GhCliHostUser};
-    use envmgr::integrations::one_password_ssh_agent::{OnePasswordSSHAgentConfig, OnePasswordSSHKey};
+    use envmgr::integrations::one_password_ssh_agent::{
+        OnePasswordSSHAgentConfig, OnePasswordSSHKey,
+    };
     use envmgr::integrations::tailscale::TailscaleConfig;
 
     let config = EnvironmentConfig {
@@ -335,7 +343,9 @@ fn test_environment_config_with_multiple_github_hosts() {
 #[test]
 fn test_environment_config_with_multiple_ssh_keys() {
     use envmgr::config::EnvironmentConfig;
-    use envmgr::integrations::one_password_ssh_agent::{OnePasswordSSHAgentConfig, OnePasswordSSHKey};
+    use envmgr::integrations::one_password_ssh_agent::{
+        OnePasswordSSHAgentConfig, OnePasswordSSHKey,
+    };
 
     let config = EnvironmentConfig {
         name: "Multi-Key SSH".to_string(),
@@ -465,7 +475,7 @@ fn test_serde_norway_yaml_formatting() {
     };
 
     let yaml = serde_norway::to_string(&config).unwrap();
-    
+
     // Verify YAML structure
     assert!(yaml.contains("name:"));
     assert!(yaml.contains("env_vars:"));
@@ -500,8 +510,8 @@ fn test_environment_config_roundtrip_with_special_characters() {
 
 #[test]
 fn test_environment_config_with_empty_strings() {
-    use envmgr::integrations::tailscale::TailscaleConfig;
     use envmgr::config::EnvironmentConfig;
+    use envmgr::integrations::tailscale::TailscaleConfig;
 
     let config = EnvironmentConfig {
         name: "".to_string(),
@@ -540,7 +550,9 @@ fn test_environment_config_path_functions() {
 fn test_complex_real_world_environment_config() {
     use envmgr::config::{EnvVarsConfig, EnvironmentConfig};
     use envmgr::integrations::gh_cli::{GhCliConfig, GhCliHostUser};
-    use envmgr::integrations::one_password_ssh_agent::{OnePasswordSSHAgentConfig, OnePasswordSSHKey};
+    use envmgr::integrations::one_password_ssh_agent::{
+        OnePasswordSSHAgentConfig, OnePasswordSSHKey,
+    };
     use envmgr::integrations::tailscale::TailscaleConfig;
 
     let config = EnvironmentConfig {

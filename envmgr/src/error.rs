@@ -43,12 +43,14 @@ mod tests {
 
     #[test]
     fn test_io_error_different_kinds() {
-        let permission_error = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
+        let permission_error =
+            std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
         let env_error: EnvMgrError = permission_error.into();
         assert!(matches!(env_error, EnvMgrError::Io(_)));
         assert!(env_error.to_string().contains("I/O Error"));
-        
-        let connection_error = std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "refused");
+
+        let connection_error =
+            std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "refused");
         let env_error: EnvMgrError = connection_error.into();
         assert!(matches!(env_error, EnvMgrError::Io(_)));
     }
@@ -66,7 +68,7 @@ mod tests {
     fn test_toml_serialization_error_conversion() {
         // Create a value that will fail serialization (using NaN which can't be serialized)
         use toml::ser::Error as TomlSerError;
-        
+
         // Since we can't easily trigger a TomlSerError, we'll test the variant exists
         // and can be created (this tests the error enum structure)
         let test_str = "test message";
@@ -84,12 +86,15 @@ mod tests {
     fn test_dir_error_different_messages() {
         let error1 = EnvMgrError::DirError("config".to_string());
         assert_eq!(error1.to_string(), "Could not determine directory: config");
-        
+
         let error2 = EnvMgrError::DirError("state".to_string());
         assert_eq!(error2.to_string(), "Could not determine directory: state");
-        
+
         let error3 = EnvMgrError::DirError("/path/to/dir".to_string());
-        assert_eq!(error3.to_string(), "Could not determine directory: /path/to/dir");
+        assert_eq!(
+            error3.to_string(),
+            "Could not determine directory: /path/to/dir"
+        );
     }
 
     #[test]
@@ -102,9 +107,12 @@ mod tests {
     fn test_gh_cli_config_error_various_messages() {
         let error1 = EnvMgrError::GhCliConfig("missing user".to_string());
         assert_eq!(error1.to_string(), "GhCli Config Error: missing user");
-        
+
         let error2 = EnvMgrError::GhCliConfig("failed to parse hosts.yml".to_string());
-        assert_eq!(error2.to_string(), "GhCli Config Error: failed to parse hosts.yml");
+        assert_eq!(
+            error2.to_string(),
+            "GhCli Config Error: failed to parse hosts.yml"
+        );
     }
 
     // ============= New Error Types Added in Diff =============
@@ -115,8 +123,15 @@ mod tests {
         let invalid_yaml = "{ invalid: yaml: structure";
         let yaml_error = serde_norway::from_str::<serde_norway::Value>(invalid_yaml).unwrap_err();
         let env_error: EnvMgrError = yaml_error.into();
-        assert!(matches!(env_error, EnvMgrError::SerdeNorwaySerialization(_)));
-        assert!(env_error.to_string().contains("Serde Norway Serialization Error"));
+        assert!(matches!(
+            env_error,
+            EnvMgrError::SerdeNorwaySerialization(_)
+        ));
+        assert!(
+            env_error
+                .to_string()
+                .contains("Serde Norway Serialization Error")
+        );
     }
 
     #[test]
@@ -129,7 +144,7 @@ mod tests {
     fn test_already_exists_error_various_messages() {
         let error1 = EnvMgrError::AlreadyExists("file at /path/to/file".to_string());
         assert_eq!(error1.to_string(), "Already Exists: file at /path/to/file");
-        
+
         let error2 = EnvMgrError::AlreadyExists("Environment 'personal' already exists at /home/user/.config/envmgr/environments/personal".to_string());
         assert!(error2.to_string().contains("Already Exists"));
         assert!(error2.to_string().contains("personal"));
@@ -147,11 +162,11 @@ mod tests {
         let io_err = EnvMgrError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "test"));
         assert!(matches!(io_err, EnvMgrError::Io(_)));
         assert!(!matches!(io_err, EnvMgrError::DirError(_)));
-        
+
         let dir_err = EnvMgrError::DirError("test".to_string());
         assert!(matches!(dir_err, EnvMgrError::DirError(_)));
         assert!(!matches!(dir_err, EnvMgrError::Io(_)));
-        
+
         let already_exists_err = EnvMgrError::AlreadyExists("test".to_string());
         assert!(matches!(already_exists_err, EnvMgrError::AlreadyExists(_)));
         assert!(!matches!(already_exists_err, EnvMgrError::DirError(_)));
@@ -163,7 +178,7 @@ mod tests {
         let success: EnvMgrResult<i32> = Ok(42);
         assert!(success.is_ok());
         assert_eq!(success.unwrap(), 42);
-        
+
         let failure: EnvMgrResult<i32> = Err(EnvMgrError::DirError("test".to_string()));
         assert!(failure.is_err());
     }
@@ -172,10 +187,10 @@ mod tests {
     fn test_result_type_with_various_types() {
         let string_result: EnvMgrResult<String> = Ok("test".to_string());
         assert_eq!(string_result.unwrap(), "test");
-        
+
         let unit_result: EnvMgrResult<()> = Ok(());
         assert!(unit_result.is_ok());
-        
+
         let vec_result: EnvMgrResult<Vec<i32>> = Ok(vec![1, 2, 3]);
         assert_eq!(vec_result.unwrap().len(), 3);
     }
@@ -188,7 +203,7 @@ mod tests {
             EnvMgrError::GhCliConfig("test".to_string()),
             EnvMgrError::AlreadyExists("test".to_string()),
         ];
-        
+
         for error in errors {
             let display = format!("{}", error);
             assert!(!display.is_empty());
@@ -211,7 +226,7 @@ mod tests {
             std::fs::read_to_string("/nonexistent/file")?;
             Ok(())
         }
-        
+
         let result = returns_io_error();
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), EnvMgrError::Io(_)));
@@ -222,12 +237,12 @@ mod tests {
         fn inner() -> EnvMgrResult<i32> {
             Err(EnvMgrError::DirError("inner error".to_string()))
         }
-        
+
         fn outer() -> EnvMgrResult<i32> {
             inner()?;
             Ok(42)
         }
-        
+
         let result = outer();
         assert!(result.is_err());
         match result.unwrap_err() {
