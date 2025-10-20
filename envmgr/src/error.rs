@@ -16,6 +16,12 @@ pub enum EnvMgrError {
     SaphyrYaml(#[from] saphyr::ScanError),
     #[error("Saphyr Emit Yaml Error: {0}")]
     SaphyrEmitYaml(#[from] saphyr::EmitError),
+    #[error("Serde Norway Serialization Error: {0}")]
+    SerdeNorwaySerialization(#[from] serde_norway::Error),
+    #[error("Dialoguer Error: {0}")]
+    Dialoguer(#[from] dialoguer::Error),
+    #[error("Already Exists: {0}")]
+    AlreadyExists(String),
     #[error("Other Error: {0}")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
 }

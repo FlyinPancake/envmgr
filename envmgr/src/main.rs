@@ -51,7 +51,7 @@ fn main() -> EnvMgrResult<()> {
         },
         Command::Add { name } => {
             info!("Adding a new environment. Name: {}", name);
-            todo!("Implement add functionality");
+            envmgr::commands::add::add_environment(name)
         }
         Command::List => {
             info!("Listing all environments.");
