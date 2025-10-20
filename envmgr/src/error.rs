@@ -65,18 +65,6 @@ mod tests {
     }
 
     #[test]
-    fn test_toml_serialization_error_conversion() {
-        // Create a value that will fail serialization (using NaN which can't be serialized)
-        use toml::ser::Error as TomlSerError;
-
-        // Since we can't easily trigger a TomlSerError, we'll test the variant exists
-        // and can be created (this tests the error enum structure)
-        let test_str = "test message";
-        let error = EnvMgrError::DirError(test_str.to_string());
-        assert!(error.to_string().contains(test_str));
-    }
-
-    #[test]
     fn test_dir_error_message() {
         let error = EnvMgrError::DirError("home".to_string());
         assert_eq!(error.to_string(), "Could not determine directory: home");
